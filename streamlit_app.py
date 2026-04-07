@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 import re
 import time
+import os
+import csv
+from datetime import datetime
 from nltk.corpus import stopwords
 import nltk
 from numpy_model import NumpyModel
@@ -302,6 +305,79 @@ section[data-testid="stSidebar"] hr {
     font-weight: 600;
     font-family: 'Inter', sans-serif;
 }
+
+/* ── Word count bar ── */
+.word-count-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: #f0f2f5;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    font-size: 0.82rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+.wc-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.wc-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.wc-dot-red { background: #dc3545; }
+.wc-dot-yellow { background: #ffc107; }
+.wc-dot-green { background: #28a745; }
+
+/* ── History table ── */
+.history-row {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f0f2f5;
+    font-size: 0.88rem;
+    transition: background 0.15s ease;
+}
+.history-row:hover {
+    background: #f8f9fa;
+}
+.history-row:last-child {
+    border-bottom: none;
+}
+.history-badge {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+}
+.history-badge-real {
+    background: #d4edda;
+    color: #155724;
+}
+.history-badge-fake {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* ── Feedback buttons ── */
+.feedback-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.25rem 0;
+}
+.feedback-label {
+    font-size: 0.95rem;
+    color: #6c757d;
+    font-weight: 600;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -467,6 +543,17 @@ if dark_mode:
         background: #30363d !important;
     }
     .footer { color: #484f58 !important; }
+    .word-count-bar {
+        background: #1c2333 !important;
+        color: #8b949e !important;
+    }
+    .history-row {
+        border-color: #30363d !important;
+        color: #e6edf3 !important;
+    }
+    .history-row:hover {
+        background: #21262d !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -579,6 +666,145 @@ def render_footer():
     """, unsafe_allow_html=True)
 
 
+def render_word_count(text):
+    """Show a live word/character count bar with quality indicator."""
+    words = len(text.split()) if text.strip() else 0
+    chars = len(text)
+    if words == 0:
+        dot_class, hint = "wc-dot-red", "Paste an article to begin"
+    elif words < 30:
+        dot_class, hint = "wc-dot-red", "Too short — results may be unreliable"
+    elif words < 80:
+        dot_class, hint = "wc-dot-yellow", "Acceptable — longer text gives better results"
+    else:
+        dot_class, hint = "wc-dot-green", "Good length for accurate analysis"
+    st.markdown(f"""
+    <div class="word-count-bar">
+        <div><strong>{words}</strong> words &nbsp;·&nbsp; <strong>{chars}</strong> characters</div>
+        <div class="wc-indicator">
+            <span class="wc-dot {dot_class}"></span> {hint}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ───────────────────────── History ─────────────────────────
+
+def _init_history():
+    """Initialize analysis history in session state."""
+    if "history" not in st.session_state:
+        st.session_state.history = []  # list of dicts
+
+
+def add_to_history(text, label, pred_real, pred_fake):
+    """Append a result to the session history (max 20 entries)."""
+    _init_history()
+    snippet = (text[:120] + "...") if len(text) > 120 else text
+    st.session_state.history.insert(0, {
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "snippet": snippet,
+        "label": label,
+        "real": pred_real,
+        "fake": pred_fake,
+    })
+    # Keep last 20
+    st.session_state.history = st.session_state.history[:20]
+
+
+def render_history():
+    """Render the recent analyses history panel."""
+    _init_history()
+    if not st.session_state.history:
+        return
+    st.markdown("---")
+    st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
+    st.markdown("### 🕒 Recent Analyses")
+
+    for entry in st.session_state.history:
+        badge_cls = "history-badge-real" if entry["label"] == "Real News" else "history-badge-fake"
+        badge_text = "REAL" if entry["label"] == "Real News" else "FAKE"
+        conf = entry["real"] if entry["label"] == "Real News" else entry["fake"]
+        st.markdown(f"""
+        <div class="history-row">
+            <div style="flex:0 0 65px; color:#adb5bd; font-size:0.8rem;">{entry["time"]}</div>
+            <div style="flex:1; padding:0 1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                {entry["snippet"]}
+            </div>
+            <div style="flex:0 0 60px; text-align:center;">
+                <span class="history-badge {badge_cls}">{badge_text}</span>
+            </div>
+            <div style="flex:0 0 55px; text-align:right; font-weight:700; font-size:0.85rem; color:#495057;">
+                {conf*100:.0f}%
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if st.button("🗑️ Clear History", key="clear_history"):
+        st.session_state.history = []
+        st.rerun()
+
+
+# ───────────────────────── Feedback ─────────────────────────
+
+FEEDBACK_FILE = "feedback_log.csv"
+
+
+def save_feedback(text_snippet, predicted_label, user_feedback):
+    """Append feedback to a CSV file for future model improvement."""
+    file_exists = os.path.isfile(FEEDBACK_FILE)
+    with open(FEEDBACK_FILE, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["timestamp", "snippet", "predicted", "feedback"])
+        writer.writerow([
+            datetime.now().isoformat(),
+            text_snippet[:300],
+            predicted_label,
+            user_feedback,
+        ])
+
+
+def render_feedback(text, label):
+    """Show thumbs up / thumbs down feedback buttons."""
+    fb_key = f"fb_{hash(text[:100])}"
+
+    # Check if feedback already given for this analysis
+    if fb_key in st.session_state:
+        if st.session_state[fb_key] == "correct":
+            st.markdown("""
+            <div style="text-align:center; padding:0.75rem; background:#d4edda; border-radius:10px; color:#155724; font-weight:600;">
+                Thanks for confirming! Your feedback helps improve the model.
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="text-align:center; padding:0.75rem; background:#fff3cd; border-radius:10px; color:#856404; font-weight:600;">
+                Thanks for flagging this! We'll use your feedback to improve accuracy.
+            </div>
+            """, unsafe_allow_html=True)
+        return
+
+    st.markdown("""
+    <div style="text-align:center; padding-top:0.5rem;">
+        <span class="feedback-label">Was this prediction correct?</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    fb_cols = st.columns([2, 1, 1, 2])
+    with fb_cols[1]:
+        if st.button("👍 Correct", key=f"{fb_key}_yes", use_container_width=True):
+            save_feedback(text, label, "correct")
+            st.session_state[fb_key] = "correct"
+            st.rerun()
+    with fb_cols[2]:
+        if st.button("👎 Wrong", key=f"{fb_key}_no", use_container_width=True):
+            save_feedback(text, label, "incorrect")
+            st.session_state[fb_key] = "incorrect"
+            st.rerun()
+
+
 # ───────────────────────── Pages ─────────────────────────
 
 # ── Home Page ──
@@ -665,6 +891,9 @@ elif page == "🔍 Analyze News":
         key="text_area_input",
     )
 
+    # ── Word count indicator ──
+    render_word_count(news_text)
+
     btn_cols = st.columns([1, 1, 4])
     with btn_cols[0]:
         analyze_clicked = st.button("🔍 Analyze", type="primary", use_container_width=True)
@@ -686,6 +915,7 @@ elif page == "🔍 Analyze News":
                 label, pred_real, pred_fake = predict_news(news_text)
                 st.session_state.result = (label, pred_real, pred_fake)
                 st.session_state.news_input = news_text
+                add_to_history(news_text, label, pred_real, pred_fake)
         else:
             st.warning("⚠️ Please enter some text to analyze.")
 
@@ -708,7 +938,13 @@ elif page == "🔍 Analyze News":
             except ImportError:
                 st.info("Install `plotly` for pie chart visualization.")
 
+        # ── Feedback section ──
+        render_feedback(news_text, label)
+
         st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── History section ──
+    render_history()
 
     render_footer()
 
