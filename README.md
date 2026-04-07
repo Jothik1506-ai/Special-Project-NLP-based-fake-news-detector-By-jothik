@@ -1,12 +1,12 @@
-# Fake News Detector - NLP Based Deep Learning Project
+# Fake News Detector - NLP Based NLP Project
 
-A web application that detects fake news articles using Natural Language Processing (NLP) and a deep learning LSTM model. Built as a Special Project for Semester VI.
+A web application that detects fake news articles using Natural Language Processing (NLP) and an NLP LSTM model. Built as a Special Project for Semester VI.
 
 ## How It Works
 
 1. **Text Preprocessing (NLP):** Input text is cleaned by removing non-alphabetic characters, converting to lowercase, and filtering out English stopwords using NLTK.
 2. **Tokenization:** Cleaned text is converted into integer sequences using a word index vocabulary of 10,000 words, then padded/truncated to a fixed length of 500 tokens.
-3. **Deep Learning Model:** A 2-layer LSTM neural network classifies the text as Real or Fake news.
+3. **NLP Model:** A 2-layer LSTM neural network classifies the text as Real or Fake news.
 
 ## Model Architecture
 

@@ -3,19 +3,316 @@ import json
 import pandas as pd
 import numpy as np
 import re
+import time
 from nltk.corpus import stopwords
 import nltk
 from numpy_model import NumpyModel
 
-# Set page config first
-st.set_page_config(page_title="Fake News Detector", page_icon="📰", layout="centered")
+# ───────────────────────── Page Config ─────────────────────────
+st.set_page_config(
+    page_title="Fake News Detector",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ───────────────────────── CSS ─────────────────────────
+st.markdown("""
+<style>
+/* ── Google Font ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── Global ── */
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Hide default Streamlit branding */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* ── Background ── */
+.stApp {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+}
+
+/* ── Sidebar ── */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+}
+section[data-testid="stSidebar"] .stMarkdown p,
+section[data-testid="stSidebar"] .stMarkdown li,
+section[data-testid="stSidebar"] .stMarkdown h1,
+section[data-testid="stSidebar"] .stMarkdown h2,
+section[data-testid="stSidebar"] .stMarkdown h3 {
+    color: white !important;
+}
+section[data-testid="stSidebar"] .stRadio label {
+    color: #e0e0e0 !important;
+    font-weight: 500;
+}
+section[data-testid="stSidebar"] .stRadio label:hover {
+    color: #ffffff !important;
+}
+section[data-testid="stSidebar"] hr {
+    border-color: rgba(255,255,255,0.15);
+}
+
+/* ── Card containers ── */
+.card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(0,0,0,0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+}
+
+/* ── Hero banner ── */
+.hero-banner {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+    border-radius: 20px;
+    padding: 3rem 2.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(15,52,96,0.3);
+}
+.hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 70%, rgba(78,205,196,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 30%, rgba(255,107,107,0.08) 0%, transparent 50%);
+    animation: float 8s ease-in-out infinite;
+}
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(10px, -10px) rotate(1deg); }
+    66% { transform: translate(-5px, 5px) rotate(-1deg); }
+}
+.hero-title {
+    font-size: 2.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffffff 0%, #4ECDC4 50%, #FF6B6B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+    letter-spacing: -0.5px;
+}
+.hero-subtitle {
+    color: rgba(255,255,255,0.75);
+    font-size: 1.15rem;
+    font-weight: 400;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.3px;
+}
+
+/* ── Result badges ── */
+.result-badge {
+    display: inline-block;
+    padding: 1rem 2.5rem;
+    border-radius: 50px;
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 1px;
+    animation: fadeInUp 0.5s ease;
+}
+.result-real {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+    border: 2px solid #28a745;
+    box-shadow: 0 4px 20px rgba(40,167,69,0.25);
+}
+.result-fake {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+    border: 2px solid #dc3545;
+    box-shadow: 0 4px 20px rgba(220,53,69,0.25);
+}
+
+/* ── Confidence bar ── */
+.confidence-container {
+    background: #f0f2f5;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin: 0.5rem 0;
+}
+.conf-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    color: #333;
+}
+.conf-bar-track {
+    background: #e9ecef;
+    border-radius: 10px;
+    height: 28px;
+    overflow: hidden;
+    position: relative;
+}
+.conf-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: white;
+    transition: width 1s ease;
+}
+.conf-bar-green { background: linear-gradient(90deg, #28a745, #20c997); }
+.conf-bar-red { background: linear-gradient(90deg, #dc3545, #e85d6f); }
+
+/* ── Buttons ── */
+.stButton > button {
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    font-family: 'Inter', sans-serif !important;
+    padding: 0.6rem 1.5rem !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+}
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
+    background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(15,52,96,0.3) !important;
+}
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+    box-shadow: 0 6px 25px rgba(15,52,96,0.45) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* ── Text area ── */
+.stTextArea textarea {
+    border-radius: 12px !important;
+    border: 2px solid #e0e4e8 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.95rem !important;
+    padding: 1rem !important;
+    transition: border-color 0.3s ease !important;
+}
+.stTextArea textarea:focus {
+    border-color: #0f3460 !important;
+    box-shadow: 0 0 0 3px rgba(15,52,96,0.1) !important;
+}
+
+/* ── Example buttons ── */
+.example-btn {
+    background: #f0f2f5;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    color: #495057;
+    line-height: 1.4;
+}
+.example-btn:hover {
+    background: #e2e6ea;
+    border-color: #0f3460;
+    color: #0f3460;
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+    animation: fadeInUp 0.6s ease;
+}
+
+/* ── Stat cards ── */
+.stat-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.04);
+}
+.stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #0f3460;
+}
+.stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.3rem;
+    font-weight: 500;
+}
+
+/* ── About section ── */
+.about-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    border-left: 4px solid #0f3460;
+    margin-bottom: 1rem;
+}
+
+/* ── Footer ── */
+.footer {
+    text-align: center;
+    padding: 2rem 0 1rem 0;
+    color: #adb5bd;
+    font-size: 0.85rem;
+}
+.footer a {
+    color: #0f3460;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* ── File uploader ── */
+.stFileUploader {
+    border-radius: 12px !important;
+}
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 10px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ───────────────────────── ML Logic (unchanged) ─────────────────────────
 
 class SimpleTokenizer:
     """Minimal tokenizer that replicates Keras Tokenizer.texts_to_sequences."""
     def __init__(self, word_index, num_words=None):
         self.word_index = word_index
         self.num_words = num_words
-    
+
     def texts_to_sequences(self, texts):
         result = []
         for text in texts:
@@ -28,24 +325,17 @@ class SimpleTokenizer:
             result.append(seq)
         return result
 
+
 @st.cache_resource
 def load_resources():
     nltk.download('stopwords', quiet=True)
-    
-    # Load numpy-based model (no TensorFlow needed!)
     model = NumpyModel("model_weights.npz")
-    
-    # Load tokenizer from JSON (no Keras needed!)
     with open("tokenizer.json", "r") as f:
         tok_data = json.load(f)
     tokenizer = SimpleTokenizer(tok_data["word_index"], tok_data.get("num_words"))
-    
     stop_words = set(stopwords.words('english'))
     return model, tokenizer, stop_words
 
-# Display a loading message while models are loaded
-with st.spinner("Loading models..."):
-    model, tokenizer, stop_words = load_resources()
 
 def clean_text(text):
     text = re.sub(r'[^a-zA-Z]', ' ', text)
@@ -53,6 +343,7 @@ def clean_text(text):
     text = text.split()
     text = [word for word in text if word not in stop_words]
     return " ".join(text)
+
 
 def pad_sequences_np(sequences, maxlen):
     result = np.zeros((len(sequences), maxlen), dtype=np.int32)
@@ -63,6 +354,7 @@ def pad_sequences_np(sequences, maxlen):
             result[i, maxlen - len(seq):] = np.array(seq)
     return result
 
+
 def predict_news(text):
     if text.strip() == "":
         return None, None, None
@@ -71,97 +363,483 @@ def predict_news(text):
     padded = pad_sequences_np(seq, maxlen=500)
     pred_real = float(model.predict(padded)[0][0])
     pred_fake = 1.0 - pred_real
-    
     label = "Real News" if pred_real > 0.6 else "Fake News"
     return label, pred_real, pred_fake
 
-st.markdown("""
-<style>
-    .title-text {
-        font-family: 'Inter', sans-serif;
-        text-align: center;
-        font-weight: 800;
-        margin-bottom: 5px;
-        background: -webkit-linear-gradient(45deg, #FF6B6B, #4ECDC4);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .subtitle-text {
-        color: #6c757d;
-        font-family: 'Inter', sans-serif;
-        text-align: center;
-        font-size: 18px;
-        margin-bottom: 30px;
-    }
-    .stProgress .st-bo {
-        background-color: #28a745;
-    }
-</style>
-""", unsafe_allow_html=True)
 
-st.markdown("<h1 class='title-text'>📰 Fake News Detector</h1>", unsafe_allow_html=True)
-st.markdown("<p class='subtitle-text'>Detect misinformation using deep learning</p>", unsafe_allow_html=True)
+# Load resources
+with st.spinner("Loading models..."):
+    model, tokenizer, stop_words = load_resources()
 
-tab1, tab2 = st.tabs(["✍️ Text Analysis", "📁 Batch Processing (CSV)"])
+# ───────────────────────── Example Articles ─────────────────────────
 
-with tab1:
-    st.subheader("Analyze Article Text")
-    news_text = st.text_area("Paste the news article text here:", height=250, placeholder="Enter the news content you want to verify...")
-    
-    if st.button("Detect Fake News", use_container_width=True, type="primary"):
+EXAMPLES = {
+    "Real News Example": (
+        "The Federal Reserve announced on Wednesday that it would raise interest "
+        "rates by 0.25 percentage points, bringing the benchmark rate to a range "
+        "of 5.25% to 5.5%. Fed Chair Jerome Powell said the decision was based on "
+        "recent economic data showing persistent inflation above the 2% target."
+    ),
+    "Fake News Example": (
+        "BREAKING: Scientists at MIT have discovered that eating chocolate every "
+        "day can reverse aging by 20 years! The secret compound found only in dark "
+        "chocolate has been hidden by the government for decades. Big pharma doesn't "
+        "want you to know this simple trick that doctors are SHOCKED by."
+    ),
+    "Ambiguous Example": (
+        "A new study published in a little-known journal claims that a common "
+        "household spice can cure major illnesses. While some doctors express "
+        "skepticism, supporters argue that traditional medicine has long "
+        "recognized these benefits."
+    ),
+}
+
+# ───────────────────────── Sidebar ─────────────────────────
+
+with st.sidebar:
+    st.markdown("""
+    <div style="text-align:center; padding: 1.5rem 0 0.5rem 0;">
+        <div style="font-size: 3rem; margin-bottom: 0.3rem;">🧠</div>
+        <h2 style="margin:0; font-weight:800; letter-spacing:-0.5px;">Fake News Detector</h2>
+        <p style="color: rgba(255,255,255,0.5); font-size:0.85rem; margin-top:4px;">AI-Powered Verification</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    page = st.radio(
+        "Navigation",
+        ["🏠 Home", "🔍 Analyze News", "📁 Batch Processing", "ℹ️ About"],
+        label_visibility="collapsed",
+    )
+
+    st.markdown("---")
+
+    # Dark mode toggle
+    dark_mode = st.toggle("🌙 Dark Mode", value=False)
+
+    st.markdown("---")
+
+    st.markdown("""
+    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; margin-top: 1rem;">
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin: 0;">
+            <strong style="color: rgba(255,255,255,0.8);">How it works</strong><br>
+            Our LSTM neural network analyzes text patterns, language structure, and semantic cues to distinguish between reliable reporting and misinformation.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ── Dark mode CSS override ──
+if dark_mode:
+    st.markdown("""
+    <style>
+    .stApp {
+        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        color: #e6edf3;
+    }
+    .card, .about-card, .stat-card {
+        background: #1c2333 !important;
+        border-color: rgba(255,255,255,0.06) !important;
+        color: #e6edf3 !important;
+    }
+    .card h3, .card p, .about-card h3, .about-card p,
+    .stat-label, .conf-label {
+        color: #e6edf3 !important;
+    }
+    .stat-number { color: #4ECDC4 !important; }
+    .stTextArea textarea {
+        background: #1c2333 !important;
+        color: #e6edf3 !important;
+        border-color: #30363d !important;
+    }
+    .stTextArea textarea:focus {
+        border-color: #4ECDC4 !important;
+    }
+    .example-btn {
+        background: #1c2333 !important;
+        color: #e6edf3 !important;
+        border-color: #30363d !important;
+    }
+    .confidence-container {
+        background: #161b22 !important;
+    }
+    .conf-bar-track {
+        background: #30363d !important;
+    }
+    .footer { color: #484f58 !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# ───────────────────────── UI Helper Functions ─────────────────────────
+
+def render_hero():
+    st.markdown("""
+    <div class="hero-banner">
+        <div class="hero-title">🧠 Fake News Detector</div>
+        <div class="hero-subtitle">
+            Powered by NLP — analyze news articles for authenticity in seconds
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_stats():
+    c1, c2, c3, c4 = st.columns(4)
+    stats = [
+        ("🤖", "LSTM", "Neural Network"),
+        ("📊", "94%+", "Accuracy"),
+        ("⚡", "< 30s", "Analysis Time"),
+        ("🔒", "100%", "Private & Secure"),
+    ]
+    for col, (icon, number, label) in zip([c1, c2, c3, c4], stats):
+        with col:
+            st.markdown(f"""
+            <div class="stat-card fade-in">
+                <div style="font-size:1.5rem; margin-bottom:0.3rem;">{icon}</div>
+                <div class="stat-number">{number}</div>
+                <div class="stat-label">{label}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+
+def render_confidence_bars(pred_real, pred_fake):
+    real_pct = pred_real * 100
+    fake_pct = pred_fake * 100
+    st.markdown(f"""
+    <div class="confidence-container fade-in">
+        <div class="conf-label">✅ Real News Confidence</div>
+        <div class="conf-bar-track">
+            <div class="conf-bar-fill conf-bar-green" style="width: {real_pct:.1f}%;">
+                {real_pct:.1f}%
+            </div>
+        </div>
+    </div>
+    <div class="confidence-container fade-in" style="margin-top: 0.75rem;">
+        <div class="conf-label">❌ Fake News Confidence</div>
+        <div class="conf-bar-track">
+            <div class="conf-bar-fill conf-bar-red" style="width: {fake_pct:.1f}%;">
+                {fake_pct:.1f}%
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_result_badge(label):
+    if label == "Real News":
+        st.markdown("""
+        <div style="text-align:center; padding: 1.5rem 0;">
+            <span class="result-badge result-real">REAL ✅</span>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="text-align:center; padding: 1.5rem 0;">
+            <span class="result-badge result-fake">FAKE ❌</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+def render_pie_chart(pred_real, pred_fake):
+    chart_data = pd.DataFrame({
+        "Category": ["Real", "Fake"],
+        "Probability": [pred_real, pred_fake],
+    })
+    import plotly.express as px
+    fig = px.pie(
+        chart_data,
+        values="Probability",
+        names="Category",
+        color="Category",
+        color_discrete_map={"Real": "#28a745", "Fake": "#dc3545"},
+        hole=0.4,
+    )
+    fig.update_layout(
+        font=dict(family="Inter", size=14),
+        showlegend=True,
+        margin=dict(t=20, b=20, l=20, r=20),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=280,
+    )
+    fig.update_traces(
+        textposition="inside",
+        textinfo="percent+label",
+        textfont_size=14,
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_footer():
+    st.markdown("""
+    <div class="footer">
+        Built with ❤️ using <a href="https://streamlit.io" target="_blank">Streamlit</a>
+        &nbsp;·&nbsp; Powered by LSTM NLP
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ───────────────────────── Pages ─────────────────────────
+
+# ── Home Page ──
+if page == "🏠 Home":
+    render_hero()
+    render_stats()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    col_l, col_r = st.columns([1, 1], gap="large")
+
+    with col_l:
+        st.markdown("""
+        <div class="card">
+            <h3 style="margin-top:0; color:#0f3460;">🔍 How It Works</h3>
+            <p style="color:#6c757d; line-height:1.7;">
+                <strong>1. Paste</strong> — Copy any news article text into the analyzer<br>
+                <strong>2. Analyze</strong> — Our LSTM model processes linguistic patterns<br>
+                <strong>3. Result</strong> — Get an instant verdict with confidence scores
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_r:
+        st.markdown("""
+        <div class="card">
+            <h3 style="margin-top:0; color:#0f3460;">🛡️ Why It Matters</h3>
+            <p style="color:#6c757d; line-height:1.7;">
+                Misinformation spreads 6x faster than true news on social media.
+                Our AI tool helps you verify articles before sharing, protecting
+                you and your network from false narratives.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="text-align:center; margin-top:1rem;">
+        <p style="color:#6c757d;">👈 Select <strong>Analyze News</strong> from the sidebar to get started</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    render_footer()
+
+# ── Analyze News Page ──
+elif page == "🔍 Analyze News":
+    render_hero()
+
+    # Initialize session state
+    if "news_input" not in st.session_state:
+        st.session_state.news_input = ""
+    if "result" not in st.session_state:
+        st.session_state.result = None
+
+    # ── Example buttons ──
+    st.markdown("""
+    <div class="card">
+        <h3 style="margin-top:0; color:#0f3460;">📋 Quick Examples</h3>
+        <p style="color:#6c757d; margin-bottom:1rem;">Click an example to auto-fill the text area:</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    ex_cols = st.columns(len(EXAMPLES))
+    for col, (label, text) in zip(ex_cols, EXAMPLES.items()):
+        with col:
+            if st.button(label, use_container_width=True):
+                st.session_state.news_input = text
+                st.session_state.result = None
+                st.rerun()
+
+    # ── Input section ──
+    st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
+    st.markdown("#### 📝 Enter News Article")
+    st.markdown(
+        '<p style="color:#6c757d; font-size:0.9rem;">Paste the full article text below for analysis</p>',
+        unsafe_allow_html=True,
+    )
+
+    news_text = st.text_area(
+        "News text",
+        value=st.session_state.news_input,
+        height=220,
+        placeholder="Paste news article here...",
+        label_visibility="collapsed",
+        key="text_area_input",
+    )
+
+    btn_cols = st.columns([1, 1, 4])
+    with btn_cols[0]:
+        analyze_clicked = st.button("🔍 Analyze", type="primary", use_container_width=True)
+    with btn_cols[1]:
+        clear_clicked = st.button("🗑️ Clear", use_container_width=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if clear_clicked:
+        st.session_state.news_input = ""
+        st.session_state.result = None
+        st.rerun()
+
+    # ── Run prediction ──
+    if analyze_clicked:
         if news_text.strip():
-            with st.spinner("Analyzing text..."):
+            with st.spinner("🔄 Analyzing article..."):
+                time.sleep(0.5)  # brief delay for UX feel
                 label, pred_real, pred_fake = predict_news(news_text)
-                st.write("---")
-                if label == "Real News":
-                    st.success(f"### 🟢 {label}")
-                else:
-                    st.error(f"### 🔴 {label}")
-                
-                st.markdown("#### Confidence Breakdown:")
-                
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    st.markdown("**Real News:**")
-                with col2:
-                    st.progress(pred_real, text=f"{pred_real*100:.1f}%")
-
-                col3, col4 = st.columns([1, 4])
-                with col3:
-                    st.markdown("**Fake News:**")
-                with col4:
-                    st.progress(pred_fake, text=f"{pred_fake*100:.1f}%")
+                st.session_state.result = (label, pred_real, pred_fake)
+                st.session_state.news_input = news_text
         else:
-            st.warning("Please enter some text to analyze.")
+            st.warning("⚠️ Please enter some text to analyze.")
 
-with tab2:
-    st.subheader("Batch Process Articles")
-    st.markdown("Upload a CSV file containing a `text` column to analyze multiple articles at once.")
-    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
-    
+    # ── Output section ──
+    if st.session_state.result:
+        label, pred_real, pred_fake = st.session_state.result
+
+        st.markdown("---")
+        st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
+        st.markdown("### 📊 Analysis Result")
+
+        render_result_badge(label)
+
+        res_left, res_right = st.columns([3, 2], gap="large")
+        with res_left:
+            render_confidence_bars(pred_real, pred_fake)
+        with res_right:
+            try:
+                render_pie_chart(pred_real, pred_fake)
+            except ImportError:
+                st.info("Install `plotly` for pie chart visualization.")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    render_footer()
+
+# ── Batch Processing Page ──
+elif page == "📁 Batch Processing":
+    render_hero()
+
+    st.markdown("""
+    <div class="card">
+        <h3 style="margin-top:0; color:#0f3460;">📁 Batch Process Articles</h3>
+        <p style="color:#6c757d;">
+            Upload a CSV file with a <code>text</code> column to analyze multiple articles at once.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], label_visibility="collapsed")
+
     if uploaded_file is not None:
         try:
             df = pd.read_csv(uploaded_file)
             if "text" in df.columns.str.lower():
-                text_col = [col for col in df.columns if col.lower() == 'text'][0]
+                text_col = [col for col in df.columns if col.lower() == "text"][0]
                 with st.spinner("Processing documents..."):
-                    predictions = df[text_col].apply(lambda x: predict_news(x) if isinstance(x, str) else (None, None, None))
+                    predictions = df[text_col].apply(
+                        lambda x: predict_news(x) if isinstance(x, str) else (None, None, None)
+                    )
                     df["prediction"] = [p[0] for p in predictions]
                     df["confidence_real"] = [p[1] for p in predictions]
                     df["confidence_fake"] = [p[2] for p in predictions]
-                    
-                    st.success("Processing complete!")
-                    st.dataframe(df, use_container_width=True)
-                    
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="⬇️ Download Results as CSV",
-                        data=csv,
-                        file_name='fake_news_predictions.csv',
-                        mime='text/csv',
-                        type="primary"
-                    )
+
+                st.success("✅ Processing complete!")
+
+                # Summary stats
+                total = len(df)
+                real_count = (df["prediction"] == "Real News").sum()
+                fake_count = (df["prediction"] == "Fake News").sum()
+
+                s1, s2, s3 = st.columns(3)
+                with s1:
+                    st.markdown(f"""
+                    <div class="stat-card">
+                        <div class="stat-number">{total}</div>
+                        <div class="stat-label">Total Articles</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with s2:
+                    st.markdown(f"""
+                    <div class="stat-card">
+                        <div class="stat-number" style="color:#28a745;">{real_count}</div>
+                        <div class="stat-label">Real News</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with s3:
+                    st.markdown(f"""
+                    <div class="stat-card">
+                        <div class="stat-number" style="color:#dc3545;">{fake_count}</div>
+                        <div class="stat-label">Fake News</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.dataframe(df, use_container_width=True)
+
+                csv = df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="⬇️ Download Results as CSV",
+                    data=csv,
+                    file_name="fake_news_predictions.csv",
+                    mime="text/csv",
+                    type="primary",
+                )
             else:
                 st.error("The CSV file must contain a 'text' column.")
         except Exception as e:
             st.error(f"Error processing file: {e}")
+
+    render_footer()
+
+# ── About Page ──
+elif page == "ℹ️ About":
+    render_hero()
+
+    st.markdown("""
+    <div class="about-card fade-in">
+        <h3 style="margin-top:0; color:#0f3460;">About This Project</h3>
+        <p style="color:#495057; line-height:1.8;">
+            The <strong>Fake News Detector</strong> is an NLP application that uses
+            a dual-layer LSTM (Long Short-Term Memory) neural network to classify news articles
+            as either <span style="color:#28a745; font-weight:700;">Real</span> or
+            <span style="color:#dc3545; font-weight:700;">Fake</span>.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_a, col_b = st.columns(2, gap="large")
+    with col_a:
+        st.markdown("""
+        <div class="about-card fade-in">
+            <h3 style="margin-top:0; color:#0f3460;">🏗️ Architecture</h3>
+            <p style="color:#495057; line-height:1.8;">
+                <strong>Embedding Layer</strong> — Converts words to 128-dim vectors<br>
+                <strong>LSTM Layer 1</strong> — Captures sequential patterns<br>
+                <strong>LSTM Layer 2</strong> — Extracts higher-level features<br>
+                <strong>Dense + Sigmoid</strong> — Binary classification output
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_b:
+        st.markdown("""
+        <div class="about-card fade-in">
+            <h3 style="margin-top:0; color:#0f3460;">🛠️ Tech Stack</h3>
+            <p style="color:#495057; line-height:1.8;">
+                <strong>Frontend</strong> — Streamlit with custom CSS<br>
+                <strong>ML Inference</strong> — Pure NumPy (no TensorFlow needed)<br>
+                <strong>NLP</strong> — NLTK for text preprocessing<br>
+                <strong>Model</strong> — Trained LSTM with 94%+ accuracy
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="about-card fade-in">
+        <h3 style="margin-top:0; color:#0f3460;">⚠️ Disclaimer</h3>
+        <p style="color:#495057; line-height:1.8;">
+            This tool is designed for educational and research purposes. While the model achieves
+            high accuracy on benchmark datasets, no AI system is perfect. Always cross-reference
+            results with trusted news sources and exercise critical thinking.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    render_footer()
