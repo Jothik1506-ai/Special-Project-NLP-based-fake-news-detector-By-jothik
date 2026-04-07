@@ -1,4 +1,6 @@
-# Fake News Detector - NLP Based NLP Project
+# Fake News Detector - NLP Based Project
+
+**Live Website:** [https://fakenewsdetectorbynlp1556.streamlit.app](https://fakenewsdetectorbynlp1556.streamlit.app)
 
 A web application that detects fake news articles using Natural Language Processing (NLP) and an NLP LSTM model. Built as a Special Project for Semester VI.
 
