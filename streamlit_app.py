@@ -380,7 +380,7 @@ section[data-testid="stSidebar"] hr {
 </style>
 """, unsafe_allow_html=True)
 
-# ───────────────────────── ML Logic (unchanged) ─────────────────────────
+# ───────────────────────── ML Logic ─────────────────────────
 
 class SimpleTokenizer:
     """Minimal tokenizer that replicates Keras Tokenizer.texts_to_sequences."""
@@ -852,8 +852,8 @@ elif page == "🔍 Analyze News":
     render_hero()
 
     # Initialize session state
-    if "news_input" not in st.session_state:
-        st.session_state.news_input = ""
+    if "text_area_input" not in st.session_state:
+        st.session_state.text_area_input = ""
     if "result" not in st.session_state:
         st.session_state.result = None
 
@@ -869,7 +869,7 @@ elif page == "🔍 Analyze News":
     for col, (label, text) in zip(ex_cols, EXAMPLES.items()):
         with col:
             if st.button(label, use_container_width=True):
-                st.session_state.news_input = text
+                st.session_state.text_area_input = text
                 st.session_state.result = None
                 st.rerun()
 
@@ -883,7 +883,6 @@ elif page == "🔍 Analyze News":
 
     news_text = st.text_area(
         "News text",
-        value=st.session_state.news_input,
         height=220,
         placeholder="Paste news article here...",
         label_visibility="collapsed",
@@ -902,7 +901,7 @@ elif page == "🔍 Analyze News":
     st.markdown("</div>", unsafe_allow_html=True)
 
     if clear_clicked:
-        st.session_state.news_input = ""
+        st.session_state.text_area_input = ""
         st.session_state.result = None
         st.rerun()
 
@@ -913,7 +912,6 @@ elif page == "🔍 Analyze News":
                 time.sleep(0.5)  # brief delay for UX feel
                 label, pred_real, pred_fake = predict_news(news_text)
                 st.session_state.result = (label, pred_real, pred_fake)
-                st.session_state.news_input = news_text
                 add_to_history(news_text, label, pred_real, pred_fake)
         else:
             st.warning("⚠️ Please enter some text to analyze.")

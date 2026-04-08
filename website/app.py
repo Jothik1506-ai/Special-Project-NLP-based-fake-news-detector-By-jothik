@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request
 import tensorflow as tf
-import pickle
+import json
 import pandas as pd
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
 import re
 from nltk.corpus import stopwords
 import nltk
@@ -10,12 +11,16 @@ nltk.download('stopwords')
 app = Flask(__name__)
 
 # Load model + tokenizer
-model = tf.keras.models.load_model("model.h5")
-tokenizer = pickle.load(open("tokenizer.pkl", "rb"))
+model = tf.keras.models.load_model("model.h5", compile=False)
+with open("tokenizer.json", "r") as f:
+    tok_data = json.load(f)
+tokenizer = Tokenizer(num_words=tok_data["num_words"], oov_token=tok_data["oov_token"],
+                       filters=tok_data["filters"], lower=tok_data["lower"], split=tok_data["split"])
+tokenizer.word_index = tok_data["word_index"]
 
 stop_words = set(stopwords.words('english'))
 
-def clean_text(text):In
+def clean_text(text):
     text = re.sub(r'[^a-zA-Z]', ' ', text)
     text = text.lower()
     text = text.split()
