@@ -33,7 +33,6 @@ html, body, [class*="css"] {
 /* Hide default Streamlit branding */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
 
 /* ── Background ── */
 .stApp {
