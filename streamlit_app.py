@@ -25,34 +25,53 @@ st.markdown("""
 /* ── Google Font ── */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ── Global ── */
+/* ── Theme Variables ── */
+:root {
+    --primary: #0f3460;
+    --primary-light: #16213e;
+    --accent: #4ECDC4;
+    --accent-red: #FF6B6B;
+    --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+    --card-bg: #ffffff;
+    --text-main: #1a1a2e;
+    --text-muted: #6c757d;
+    --sidebar-bg: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    --sidebar-text: #ffffff;
+    --border-color: rgba(0,0,0,0.06);
+    --shadow: 0 4px 24px rgba(0,0,0,0.06);
+    --input-bg: #ffffff;
+    --input-border: #e0e4e8;
+}
+
+/* ── Global Styles ── */
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
+}
+
+.stApp {
+    background: var(--bg-gradient);
+    color: var(--text-main);
 }
 
 /* Hide default Streamlit branding */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 
-/* ── Background ── */
-.stApp {
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
-}
-
 /* ── Sidebar ── */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    color: white;
+    background: var(--sidebar-bg);
 }
-section[data-testid="stSidebar"] .stMarkdown p,
-section[data-testid="stSidebar"] .stMarkdown li,
-section[data-testid="stSidebar"] .stMarkdown h1,
-section[data-testid="stSidebar"] .stMarkdown h2,
-section[data-testid="stSidebar"] .stMarkdown h3 {
-    color: white !important;
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3,
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] li {
+    color: var(--sidebar-text) !important;
 }
+
+/* Robust sidebar radio button labels */
 section[data-testid="stSidebar"] .stRadio label {
-    color: #e0e0e0 !important;
+    color: rgba(255,255,255,0.8) !important;
     font-weight: 500;
 }
 section[data-testid="stSidebar"] .stRadio label:hover {
@@ -62,15 +81,16 @@ section[data-testid="stSidebar"] hr {
     border-color: rgba(255,255,255,0.15);
 }
 
-/* ── Card containers ── */
+/* ── Components ── */
 .card {
-    background: #ffffff;
+    background: var(--card-bg);
     border-radius: 16px;
     padding: 2rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow);
     margin-bottom: 1.5rem;
-    border: 1px solid rgba(0,0,0,0.04);
+    border: 1px solid var(--border-color);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    color: var(--text-main);
 }
 .card:hover {
     transform: translateY(-2px);
@@ -79,7 +99,7 @@ section[data-testid="stSidebar"] hr {
 
 /* ── Hero banner ── */
 .hero-banner {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+    background: var(--sidebar-bg);
     border-radius: 20px;
     padding: 3rem 2.5rem;
     margin-bottom: 2rem;
@@ -91,10 +111,8 @@ section[data-testid="stSidebar"] hr {
 .hero-banner::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
     background: radial-gradient(circle at 30% 70%, rgba(78,205,196,0.1) 0%, transparent 50%),
                 radial-gradient(circle at 70% 30%, rgba(255,107,107,0.08) 0%, transparent 50%);
     animation: float 8s ease-in-out infinite;
@@ -107,7 +125,7 @@ section[data-testid="stSidebar"] hr {
 .hero-title {
     font-size: 2.8rem;
     font-weight: 900;
-    background: linear-gradient(135deg, #ffffff 0%, #4ECDC4 50%, #FF6B6B 100%);
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent) 50%, var(--accent-red) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -151,19 +169,20 @@ section[data-testid="stSidebar"] hr {
 
 /* ── Confidence bar ── */
 .confidence-container {
-    background: #f0f2f5;
+    background: var(--input-bg);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     margin: 0.5rem 0;
+    border: 1px solid var(--border-color);
 }
 .conf-label {
     font-weight: 600;
     font-size: 0.9rem;
     margin-bottom: 6px;
-    color: #333;
+    color: var(--text-main);
 }
 .conf-bar-track {
-    background: #e9ecef;
+    background: var(--input-border);
     border-radius: 10px;
     height: 28px;
     overflow: hidden;
@@ -172,13 +191,9 @@ section[data-testid="stSidebar"] hr {
 .conf-bar-fill {
     height: 100%;
     border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    display: flex; align-items: center; justify-content: flex-end;
     padding-right: 12px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: white;
+    font-weight: 700; font-size: 0.85rem; color: white;
     transition: width 1s ease;
 }
 .conf-bar-green { background: linear-gradient(90deg, #28a745, #20c997); }
@@ -188,195 +203,91 @@ section[data-testid="stSidebar"] hr {
 .stButton > button {
     border-radius: 12px !important;
     font-weight: 600 !important;
-    font-family: 'Inter', sans-serif !important;
     padding: 0.6rem 1.5rem !important;
     transition: all 0.3s ease !important;
-    border: none !important;
+    border: 1px solid var(--input-border) !important;
+    background: var(--input-bg) !important;
+    color: var(--text-main) !important;
 }
-.stButton > button[kind="primary"],
-.stButton > button[data-testid="stBaseButton-primary"] {
-    background: linear-gradient(135deg, #0f3460 0%, #16213e 100%) !important;
+.stButton > button[kind="primary"] {
+    background: var(--primary) !important;
     color: white !important;
     box-shadow: 0 4px 15px rgba(15,52,96,0.3) !important;
+    border: none !important;
 }
-.stButton > button[kind="primary"]:hover,
-.stButton > button[data-testid="stBaseButton-primary"]:hover {
-    box-shadow: 0 6px 25px rgba(15,52,96,0.45) !important;
+.stButton > button:hover {
     transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+.stButton > button[kind="primary"]:hover {
+    color: white !important;
 }
 
 /* ── Text area ── */
 .stTextArea textarea {
+    background: var(--input-bg) !important;
+    color: var(--text-main) !important;
     border-radius: 12px !important;
-    border: 2px solid #e0e4e8 !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.95rem !important;
+    border: 2px solid var(--input-border) !important;
     padding: 1rem !important;
-    transition: border-color 0.3s ease !important;
 }
 .stTextArea textarea:focus {
-    border-color: #0f3460 !important;
-    box-shadow: 0 0 0 3px rgba(15,52,96,0.1) !important;
-}
-
-/* ── Example buttons ── */
-.example-btn {
-    background: #f0f2f5;
-    border: 1px solid #dee2e6;
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.85rem;
-    color: #495057;
-    line-height: 1.4;
-}
-.example-btn:hover {
-    background: #e2e6ea;
-    border-color: #0f3460;
-    color: #0f3460;
-}
-
-/* ── Animations ── */
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.fade-in {
-    animation: fadeInUp 0.6s ease;
+    border-color: var(--primary) !important;
 }
 
 /* ── Stat cards ── */
 .stat-card {
-    background: white;
+    background: var(--card-bg);
     border-radius: 14px;
     padding: 1.5rem;
     text-align: center;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-    border: 1px solid rgba(0,0,0,0.04);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
 }
 .stat-number {
     font-size: 2rem;
     font-weight: 800;
-    color: #0f3460;
+    color: var(--primary);
 }
 .stat-label {
     font-size: 0.85rem;
-    color: #6c757d;
+    color: var(--text-muted);
     margin-top: 0.3rem;
     font-weight: 500;
 }
 
-/* ── About section ── */
-.about-card {
-    background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-    border-left: 4px solid #0f3460;
-    margin-bottom: 1rem;
+/* ── History & Others ── */
+.history-row {
+    display: flex; align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
 }
+.history-row:hover { background: rgba(0,0,0,0.02); }
+.history-badge {
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    font-weight: 700; font-size: 0.75rem;
+}
+.history-badge-real { background: #d4edda; color: #155724; }
+.history-badge-fake { background: #f8d7da; color: #721c24; }
 
 /* ── Footer ── */
 .footer {
     text-align: center;
-    padding: 2rem 0 1rem 0;
-    color: #adb5bd;
+    padding: 2rem 0;
+    color: var(--text-muted);
     font-size: 0.85rem;
 }
-.footer a {
-    color: #0f3460;
-    text-decoration: none;
-    font-weight: 600;
-}
+.footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
 
-/* ── File uploader ── */
-.stFileUploader {
-    border-radius: 12px !important;
+/* Animations */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-/* ── Tabs ── */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-}
-.stTabs [data-baseweb="tab"] {
-    border-radius: 10px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-}
-
-/* ── Word count bar ── */
-.word-count-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.75rem;
-    background: #f0f2f5;
-    border-radius: 8px;
-    margin-top: 0.5rem;
-    font-size: 0.82rem;
-    color: #6c757d;
-    font-weight: 500;
-}
-.wc-indicator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.wc-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-}
-.wc-dot-red { background: #dc3545; }
-.wc-dot-yellow { background: #ffc107; }
-.wc-dot-green { background: #28a745; }
-
-/* ── History table ── */
-.history-row {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f0f2f5;
-    font-size: 0.88rem;
-    transition: background 0.15s ease;
-}
-.history-row:hover {
-    background: #f8f9fa;
-}
-.history-row:last-child {
-    border-bottom: none;
-}
-.history-badge {
-    display: inline-block;
-    padding: 0.2rem 0.65rem;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 0.75rem;
-    letter-spacing: 0.3px;
-}
-.history-badge-real {
-    background: #d4edda;
-    color: #155724;
-}
-.history-badge-fake {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-/* ── Feedback buttons ── */
-.feedback-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 1.25rem 0;
-}
-.feedback-label {
-    font-size: 0.95rem;
-    color: #6c757d;
-    font-weight: 600;
-}
+.fade-in { animation: fadeInUp 0.6s ease; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -508,51 +419,31 @@ with st.sidebar:
 if dark_mode:
     st.markdown("""
     <style>
-    .stApp {
-        background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-        color: #e6edf3;
+    :root {
+        --primary: #4ECDC4;
+        --primary-light: #45b7af;
+        --bg-gradient: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        --card-bg: #1c2333;
+        --text-main: #e6edf3;
+        --text-muted: #8b949e;
+        --sidebar-bg: linear-gradient(180deg, #0d1117 0%, #0d1117 100%);
+        --border-color: rgba(255,255,255,0.08);
+        --input-bg: #0d1117;
+        --input-border: #30363d;
+        --shadow: 0 4px 24px rgba(0,0,0,0.3);
     }
-    .card, .about-card, .stat-card {
-        background: #1c2333 !important;
-        border-color: rgba(255,255,255,0.06) !important;
-        color: #e6edf3 !important;
-    }
-    .card h3, .card p, .about-card h3, .about-card p,
-    .stat-label, .conf-label {
-        color: #e6edf3 !important;
-    }
-    .stat-number { color: #4ECDC4 !important; }
-    .stTextArea textarea {
-        background: #1c2333 !important;
-        color: #e6edf3 !important;
-        border-color: #30363d !important;
-    }
-    .stTextArea textarea:focus {
-        border-color: #4ECDC4 !important;
-    }
+    /* Specific dark mode tweaks */
+    .stApp { color: var(--text-main); }
+    .card h3 { color: var(--primary) !important; }
+    .stat-number { color: var(--primary) !important; }
     .example-btn {
-        background: #1c2333 !important;
-        color: #e6edf3 !important;
-        border-color: #30363d !important;
+        background: var(--card-bg) !important;
+        color: var(--text-main) !important;
+        border-color: var(--input-border) !important;
     }
-    .confidence-container {
-        background: #161b22 !important;
-    }
-    .conf-bar-track {
-        background: #30363d !important;
-    }
-    .footer { color: #484f58 !important; }
-    .word-count-bar {
-        background: #1c2333 !important;
-        color: #8b949e !important;
-    }
-    .history-row {
-        border-color: #30363d !important;
-        color: #e6edf3 !important;
-    }
-    .history-row:hover {
-        background: #21262d !important;
-    }
+    .confidence-container { background: #161b22 !important; }
+    .history-row:hover { background: rgba(255,255,255,0.03) !important; }
+    .word-count-bar { background: var(--input-bg) !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -725,14 +616,14 @@ def render_history():
         conf = entry["real"] if entry["label"] == "Real News" else entry["fake"]
         st.markdown(f"""
         <div class="history-row">
-            <div style="flex:0 0 65px; color:#adb5bd; font-size:0.8rem;">{entry["time"]}</div>
+            <div style="flex:0 0 65px; color:var(--text-muted); font-size:0.8rem;">{entry["time"]}</div>
             <div style="flex:1; padding:0 1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                 {entry["snippet"]}
             </div>
             <div style="flex:0 0 60px; text-align:center;">
                 <span class="history-badge {badge_cls}">{badge_text}</span>
             </div>
-            <div style="flex:0 0 55px; text-align:right; font-weight:700; font-size:0.85rem; color:#495057;">
+            <div style="flex:0 0 55px; text-align:right; font-weight:700; font-size:0.85rem; color:var(--text-main);">
                 {conf*100:.0f}%
             </div>
         </div>
@@ -818,8 +709,8 @@ if page == "🏠 Home":
     with col_l:
         st.markdown("""
         <div class="card">
-            <h3 style="margin-top:0; color:#0f3460;">🔍 How It Works</h3>
-            <p style="color:#6c757d; line-height:1.7;">
+            <h3 style="margin-top:0; color:var(--primary);">🔍 How It Works</h3>
+            <p style="color:var(--text-muted); line-height:1.7;">
                 <strong>1. Paste</strong> — Copy any news article text into the analyzer<br>
                 <strong>2. Analyze</strong> — Our LSTM model processes linguistic patterns<br>
                 <strong>3. Result</strong> — Get an instant verdict with confidence scores
@@ -830,8 +721,8 @@ if page == "🏠 Home":
     with col_r:
         st.markdown("""
         <div class="card">
-            <h3 style="margin-top:0; color:#0f3460;">🛡️ Why It Matters</h3>
-            <p style="color:#6c757d; line-height:1.7;">
+            <h3 style="margin-top:0; color:var(--primary);">🛡️ Why It Matters</h3>
+            <p style="color:var(--text-muted); line-height:1.7;">
                 Misinformation spreads 6x faster than true news on social media.
                 Our AI tool helps you verify articles before sharing, protecting
                 you and your network from false narratives.
@@ -841,7 +732,7 @@ if page == "🏠 Home":
 
     st.markdown("""
     <div style="text-align:center; margin-top:1rem;">
-        <p style="color:#6c757d;">👈 Select <strong>Analyze News</strong> from the sidebar to get started</p>
+        <p style="color:var(--text-muted);">👈 Select <strong>Analyze News</strong> from the sidebar to get started</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -860,8 +751,8 @@ elif page == "🔍 Analyze News":
     # ── Example buttons ──
     st.markdown("""
     <div class="card">
-        <h3 style="margin-top:0; color:#0f3460;">📋 Quick Examples</h3>
-        <p style="color:#6c757d; margin-bottom:1rem;">Click an example to auto-fill the text area:</p>
+        <h3 style="margin-top:0; color:var(--primary);">📋 Quick Examples</h3>
+        <p style="color:var(--text-muted); margin-bottom:1rem;">Click an example to auto-fill the text area:</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -877,7 +768,7 @@ elif page == "🔍 Analyze News":
     st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
     st.markdown("#### 📝 Enter News Article")
     st.markdown(
-        '<p style="color:#6c757d; font-size:0.9rem;">Paste the full article text below for analysis</p>',
+        '<p style="color:var(--text-muted); font-size:0.9rem;">Paste the full article text below for analysis</p>',
         unsafe_allow_html=True,
     )
 
@@ -951,8 +842,8 @@ elif page == "📁 Batch Processing":
 
     st.markdown("""
     <div class="card">
-        <h3 style="margin-top:0; color:#0f3460;">📁 Batch Process Articles</h3>
-        <p style="color:#6c757d;">
+        <h3 style="margin-top:0; color:var(--primary);">📁 Batch Process Articles</h3>
+        <p style="color:var(--text-muted);">
             Upload a CSV file with a <code>text</code> column to analyze multiple articles at once.
         </p>
     </div>
@@ -1027,8 +918,8 @@ elif page == "ℹ️ About":
 
     st.markdown("""
     <div class="about-card fade-in">
-        <h3 style="margin-top:0; color:#0f3460;">About This Project</h3>
-        <p style="color:#495057; line-height:1.8;">
+        <h3 style="margin-top:0; color:var(--primary);">About This Project</h3>
+        <p style="color:var(--text-main); line-height:1.8;">
             The <strong>Fake News Detector</strong> is an NLP application that uses
             a dual-layer LSTM (Long Short-Term Memory) neural network to classify news articles
             as either <span style="color:#28a745; font-weight:700;">Real</span> or
@@ -1041,8 +932,8 @@ elif page == "ℹ️ About":
     with col_a:
         st.markdown("""
         <div class="about-card fade-in">
-            <h3 style="margin-top:0; color:#0f3460;">🏗️ Architecture</h3>
-            <p style="color:#495057; line-height:1.8;">
+            <h3 style="margin-top:0; color:var(--primary);">🏗️ Architecture</h3>
+            <p style="color:var(--text-main); line-height:1.8;">
                 <strong>Embedding Layer</strong> — Converts words to 128-dim vectors<br>
                 <strong>LSTM Layer 1</strong> — Captures sequential patterns<br>
                 <strong>LSTM Layer 2</strong> — Extracts higher-level features<br>
@@ -1054,8 +945,8 @@ elif page == "ℹ️ About":
     with col_b:
         st.markdown("""
         <div class="about-card fade-in">
-            <h3 style="margin-top:0; color:#0f3460;">🛠️ Tech Stack</h3>
-            <p style="color:#495057; line-height:1.8;">
+            <h3 style="margin-top:0; color:var(--primary);">🛠️ Tech Stack</h3>
+            <p style="color:var(--text-main); line-height:1.8;">
                 <strong>Frontend</strong> — Streamlit with custom CSS<br>
                 <strong>ML Inference</strong> — Pure NumPy (no TensorFlow needed)<br>
                 <strong>NLP</strong> — NLTK for text preprocessing<br>
@@ -1066,8 +957,8 @@ elif page == "ℹ️ About":
 
     st.markdown("""
     <div class="about-card fade-in">
-        <h3 style="margin-top:0; color:#0f3460;">⚠️ Disclaimer</h3>
-        <p style="color:#495057; line-height:1.8;">
+        <h3 style="margin-top:0; color:var(--primary);">⚠️ Disclaimer</h3>
+        <p style="color:var(--text-main); line-height:1.8;">
             This tool is designed for educational and research purposes. While the model achieves
             high accuracy on benchmark datasets, no AI system is perfect. Always cross-reference
             results with trusted news sources and exercise critical thinking.
